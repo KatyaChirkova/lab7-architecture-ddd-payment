@@ -7,23 +7,21 @@ from domain.value_objects import Money
 
 @pytest.fixture
 def order_repository():
-    """Фикстура репозитория"""
     return InMemoryOrderRepository()
 
 @pytest.fixture
 def payment_gateway():
-    """Фикстура платежного шлюза"""
     return FakePaymentGateway()
 
 @pytest.fixture
 def pay_order_use_case(order_repository, payment_gateway):
-    """Фикстура use case"""
     return PayOrderUseCase(order_repository, payment_gateway)
 
 @pytest.fixture
 def sample_order():
-    """Фикстура тестового заказа"""
     order = Order(id=1, customer_id=100)
-    order.add_line("Laptop", 1, Money(50000_00))
-    order.add_line("Mouse", 2, Money(1500_00))
+    # ИЗМЕНИТЕ СУММЫ чтобы было меньше 10000 рублей!
+    order.add_line("Laptop", 1, Money(5000_00))   # 5000 рублей вместо 50000
+    order.add_line("Mouse", 2, Money(500_00))     # 500 рублей вместо 1500
+    # Итого: 5000 + 1000 = 6000 рублей < 10000 рублей
     return order

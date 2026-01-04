@@ -1,7 +1,7 @@
 ﻿from typing import Tuple
 from .interfaces import OrderRepository, PaymentGateway
-from domain.entities import Order
-from domain.exceptions import DomainException
+from domain.entities import Order, OrderStatus
+from domain.exceptions import DomainException, EmptyOrderException, OrderAlreadyPaidException
 
 class PayOrderUseCase:
     """Use Case: Оплата заказа"""
@@ -25,16 +25,22 @@ class PayOrderUseCase:
             return False, f"Order {order_id} not found"
         
         try:
-            # 2. Выполняем доменную операцию (проверка инвариантов)
-            order.pay()
+            # 2. Валидация (не меняем статус!)
+            if not order.lines:
+                raise EmptyOrderException("Cannot pay an empty order")
             
-            # 3. Вызываем внешний платежный сервис
+            if order.status == OrderStatus.PAID:
+                # ОШИБКА БЫЛА ЗДЕСЬ: self.id вместо order.id!
+                raise OrderAlreadyPaidException(f"Order {order.id} is already paid")
+            
+            # 3. Пытаемся провести платеж
             payment_success = self.payment_gateway.charge(order.id, order.total_amount)
             
             if not payment_success:
                 return False, "Payment gateway declined the transaction"
             
-            # 4. Сохраняем обновленный заказ
+            # 4. Только если платеж прошел - меняем состояние
+            order.status = OrderStatus.PAID
             self.order_repository.save(order)
             
             return True, f"Order {order_id} successfully paid"
